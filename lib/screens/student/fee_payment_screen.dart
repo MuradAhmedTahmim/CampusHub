@@ -25,13 +25,6 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   void initState() {
     super.initState();
     _loadData();
-    _waiverController.addListener(() {
-      setState(() {
-        _waiver = double.tryParse(_waiverController.text) ?? 0;
-        if (_waiver > 100) _waiver = 100;
-        if (_waiver < 0) _waiver = 0;
-      });
-    });
   }
 
   Future<void> _loadData() async {
@@ -50,7 +43,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
             : 'U';
         _profileWaiver = waiver.toDouble();
         _waiver = waiver.toDouble();
-        _waiverController.text = waiver.toInt().toString();
+
       });
     }
 
@@ -86,7 +79,84 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   int get _waiverAmount => (_grossFee * _waiver / 100).round();
   int get _netFee => _grossFee - _waiverAmount;
 
-  Future<void> _pay() async {
+  Future<void> _showPaymentDialog() async {
+    String selectedMethod = 'bKash';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Demo Payment Gateway'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+
+                  DropdownButton<String>(
+                    value: selectedMethod,
+                    isExpanded: true,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'bKash',
+                        child: Text('bKash'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Nagad',
+                        child: Text('Nagad'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Rocket',
+                        child: Text('Rocket'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Visa',
+                        child: Text('Visa Card'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedMethod = value!;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    'Amount: ৳ $_netFee',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+
+                ElevatedButton(
+                  onPressed: () async {
+
+                    Navigator.pop(context);
+
+                    await _pay(selectedMethod);
+
+                  },
+                  child: const Text('Pay Now'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _pay(String paymentMethod) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -97,6 +167,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       'studentId': uid,
       'studentName': _userName,
       'transactionId': txnId,
+      'paymentMethod': paymentMethod,
       'semester': 'Spring 2026',
       'grossFee': _grossFee,
       'waiver': _waiver,
@@ -105,7 +176,6 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       'status': 'Paid',
       'paidAt': DateTime.now().toIso8601String(),
     });
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -288,7 +358,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                                 color: const Color(0xFF212121))),
                         const SizedBox(height: 4),
                         Text(
-                          'Profile waiver: ${_profileWaiver.toInt()}% — you can adjust below',
+                          'Profile waiver: ${_profileWaiver.toInt()}%',
                           style: GoogleFonts.poppins(
                               fontSize: 11, color: Colors.grey),
                         ),
@@ -300,7 +370,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'Scholarship/Waiver: ${_profileWaiver.toInt()}%',
+                            'Waiver: ${_profileWaiver.toInt()}%',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -358,7 +428,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _pay,
+                      onPressed: _showPaymentDialog,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2196F3),
                         shape: RoundedRectangleBorder(

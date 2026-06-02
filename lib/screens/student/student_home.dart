@@ -7,6 +7,8 @@ import 'assignment_screen.dart';
 import 'attendance_screen.dart';
 import 'notice_screen.dart';
 import 'profile_screen.dart';
+import 'fee_payment_screen.dart';
+import 'cgpa_screen.dart';
 
 class StudentHome extends StatefulWidget {
   const StudentHome({super.key});
@@ -275,19 +277,75 @@ class _HomeContentState extends State<_HomeContent> {
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF212121))),
                 const SizedBox(height: 10),
-                Row(
+                Column(
                   children: [
-                    _quickAction(context, Icons.book, 'Courses',
-                        const Color(0xFFE6F1FB), const Color(0xFF185FA5), 1),
-                    const SizedBox(width: 8),
-                    _quickAction(context, Icons.assignment, 'Tasks',
-                        const Color(0xFFE1F5EE), const Color(0xFF0F6E56), 2),
-                    const SizedBox(width: 8),
-                    _quickAction(context, Icons.calendar_today, 'Attendance',
-                        const Color(0xFFFAEEDA), const Color(0xFFBA7517), 3),
-                    const SizedBox(width: 8),
-                    _quickAction(context, Icons.notifications, 'Notices',
-                        const Color(0xFFFCEBEB), const Color(0xFFA32D2D), 4),
+                    Row(
+                      children: [
+                        _quickAction(
+                          context,
+                          Icons.book,
+                          'Courses',
+                          const Color(0xFFE6F1FB),
+                          const Color(0xFF185FA5),
+                          1,
+                        ),
+                        const SizedBox(width: 8),
+                        _quickAction(
+                          context,
+                          Icons.assignment,
+                          'Tasks',
+                          const Color(0xFFE1F5EE),
+                          const Color(0xFF0F6E56),
+                          2,
+                        ),
+                        const SizedBox(width: 8),
+                        _quickAction(
+                          context,
+                          Icons.calendar_today,
+                          'Attendance',
+                          const Color(0xFFFAEEDA),
+                          const Color(0xFFBA7517),
+                          3,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        _quickAction(
+                          context,
+                          Icons.notifications,
+                          'Notices',
+                          const Color(0xFFFCEBEB),
+                          const Color(0xFFA32D2D),
+                          4,
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        _quickActionPage(
+                          context,
+                          Icons.payment,
+                          'Payment',
+                          const Color(0xFFE8F5E9),
+                          const Color(0xFF2E7D32),
+                          const FeePaymentScreen(),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        _quickActionPage(
+                          context,
+                          Icons.school,
+                          'CGPA',
+                          const Color(0xFFEDE7F6),
+                          const Color(0xFF673AB7),
+                          const CgpaScreen(),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -467,7 +525,54 @@ class _HomeContentState extends State<_HomeContent> {
       ),
     );
   }
-
+  Widget _quickActionPage(
+      BuildContext context,
+      IconData icon,
+      String label,
+      Color bgColor,
+      Color iconColor,
+      Widget page,
+      ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => page),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE0E4EF)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: const Color(0xFF212121),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Widget _assignmentCard(String title, String course, String deadline,
       Color badgeBg, Color badgeColor) {
     return Container(

@@ -219,6 +219,21 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                     color: const Color(0xFF212121)),
                               ),
                               Text(
+                                'Txn: ${data['transactionId'] ?? ''}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+
+                              Text(
+                                '${data['paymentMethod'] ?? ''}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              Text(
                                 paidAt != null
                                     ? 'Paid on ${paidAt.day}/${paidAt.month}/${paidAt.year}'
                                     : 'Pending',
