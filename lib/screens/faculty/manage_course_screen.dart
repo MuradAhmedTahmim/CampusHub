@@ -119,7 +119,7 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
       await newRef.set({
         'courseName': _courseNameController.text.trim(),
         'courseCode': _courseCodeController.text.trim(),
-        'credit': int.tryParse(_creditController.text.trim()) ?? 3,
+        'credit': double.tryParse(_creditController.text.trim()) ?? 3.0,
         'facultyId': uid,
         'facultyName': facultyName,
         'createdAt': DateTime.now().toIso8601String(),
@@ -226,7 +226,7 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
 
               TextField(
                 controller: _creditController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Credits',
                   border: OutlineInputBorder(

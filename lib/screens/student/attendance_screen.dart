@@ -19,9 +19,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   void initState() {
     super.initState();
+
+    FirebaseDatabase.instance
+        .ref('attendance')
+        .onValue
+        .listen((event) {
+      _loadAttendance();
+    });
+
     _loadAttendance();
   }
-
   Future<void> _loadAttendance() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -56,19 +63,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
       // Load attendance
       final attSnap = await FirebaseDatabase.instance
-          .ref('attendance')
-          .orderByChild('studentId')
-          .equalTo(uid)
+          .ref('attendance/$courseId')
           .get();
 
       int present = 0;
       int absent = 0;
 
       if (attSnap.exists) {
-        final attData = Map<String, dynamic>.from(attSnap.value as Map);
-        attData.forEach((key, value) {
-          final att = Map<String, dynamic>.from(value as Map);
-          if (att['courseId'] == courseId) {
+        final dates =
+        Map<String, dynamic>.from(attSnap.value as Map);
+
+        dates.forEach((date, students) {
+          final studentMap =
+          Map<String, dynamic>.from(students as Map);
+
+          if (studentMap.containsKey(uid)) {
+            final att =
+            Map<String, dynamic>.from(studentMap[uid] as Map);
+
             if (att['status'] == 'Present') {
               present++;
             } else {
@@ -253,7 +265,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                       : Colors.grey)),
                         ],
                       ),
-                      if (pctInt < 75) ...[
+                      if (pctInt < 60) ...[
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -268,7 +280,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Attendance below 75%! Please attend more classes.',
+                                  'Attendance below 60%! Please attend more classes.',
                                   style: GoogleFonts.poppins(
                                       fontSize: 10,
                                       color: const Color(0xFF791F1F)),

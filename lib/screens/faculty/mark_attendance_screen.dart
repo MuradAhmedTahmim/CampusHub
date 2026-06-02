@@ -56,12 +56,15 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
   Future<void> _loadStudents(String courseId) async {
     setState(() => _isLoadingStudents = true);
-
+    print("Course ID: $courseId");
     final enrollSnap = await FirebaseDatabase.instance
         .ref('enrollments')
         .orderByChild('courseId')
         .equalTo(courseId)
         .get();
+
+    print("Enroll Exists: ${enrollSnap.exists}");
+    print(enrollSnap.value);
 
     if (!enrollSnap.exists) {
       setState(() {
@@ -100,11 +103,16 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
     setState(() => _isSaving = true);
 
+    final dateKey =
+        "${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}";
+
     for (var student in _students) {
       final uid = student['uid'];
       final status = _attendanceStatus[uid] ?? 'Present';
 
-      await FirebaseDatabase.instance.ref('attendance').push().set({
+      await FirebaseDatabase.instance
+          .ref('attendance/$_selectedCourseId/$dateKey/$uid')
+          .set({
         'studentId': uid,
         'studentName': student['name'] ?? '',
         'courseId': _selectedCourseId,
