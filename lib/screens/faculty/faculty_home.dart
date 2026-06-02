@@ -259,14 +259,34 @@ class _FacultyHomeContent extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _quickAction(context, Icons.book, 'Courses', const Color(0xFFE6F1FB), const Color(0xFF185FA5), 1),
+                    _quickAction(context, Icons.book, 'Courses',
+                        const Color(0xFFE6F1FB), const Color(0xFF185FA5), 1),
                     const SizedBox(width: 8),
-                    _quickAction(context, Icons.assignment_add, 'Assignment', const Color(0xFFE1F5EE), const Color(0xFF0F6E56), 2),
+                    _quickAction(context, Icons.assignment_add, 'Assignment',
+                        const Color(0xFFE1F5EE), const Color(0xFF0F6E56), 2),
                     const SizedBox(width: 8),
-                    _quickAction(context, Icons.how_to_reg, 'Attendance', const Color(0xFFFAEEDA), const Color(0xFFBA7517), 3),
+                    _quickAction(context, Icons.how_to_reg, 'Attendance',
+                        const Color(0xFFFAEEDA), const Color(0xFFBA7517), 3),
                   ],
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CreateNoticeScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.campaign),
+                    label: const Text('Create Notice'),
+                  ),
+                ),
 
                 // My courses
                 Text('My courses',
