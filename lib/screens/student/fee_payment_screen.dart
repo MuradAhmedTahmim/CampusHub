@@ -14,7 +14,7 @@ class FeePaymentScreen extends StatefulWidget {
 class _FeePaymentScreenState extends State<FeePaymentScreen> {
   final _waiverController = TextEditingController();
   final int _perCreditRate = 1500;
-  int _totalCredits = 0;
+  double _totalCredits = 0;
   double _waiver = 0;
   bool _isLoading = true;
   String _userName = '';
@@ -60,7 +60,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
         .equalTo(uid)
         .get();
 
-    int credits = 0;
+    double credits = 0;
     if (enrollSnap.exists) {
       final enrollments = Map<String, dynamic>.from(enrollSnap.value as Map);
       for (var entry in enrollments.values) {
@@ -70,7 +70,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
         await FirebaseDatabase.instance.ref('courses/$courseId').get();
         if (courseSnap.exists) {
           final course = Map<String, dynamic>.from(courseSnap.value as Map);
-          credits += (course['credit'] ?? 0) as int;
+          credits += ((course['credit'] ?? 0) as num).toDouble();
         }
       }
     }
@@ -81,7 +81,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     });
   }
 
-  int get _grossFee => _totalCredits * _perCreditRate;
+  int get _grossFee =>
+      (_totalCredits * _perCreditRate).round();
   int get _waiverAmount => (_grossFee * _waiver / 100).round();
   int get _netFee => _grossFee - _waiverAmount;
 
@@ -89,9 +90,13 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+    final txnId =
+        "TXN${DateTime.now().millisecondsSinceEpoch}";
+
     await FirebaseDatabase.instance.ref('payments').push().set({
       'studentId': uid,
       'studentName': _userName,
+      'transactionId': txnId,
       'semester': 'Spring 2026',
       'grossFee': _grossFee,
       'waiver': _waiver,
@@ -101,11 +106,13 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       'paidAt': DateTime.now().toIso8601String(),
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Redirecting to SSLCommerz...')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Payment Successful\nTransaction ID: $txnId',
+        ),
+      ),
+    );
   }
 
   @override
@@ -254,7 +261,10 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF212121))),
                         const SizedBox(height: 10),
-                        _infoRow('Enrolled credits', '$_totalCredits credits'),
+                        _infoRow(
+                          'Enrolled credits',
+                          '${_totalCredits.toStringAsFixed(1)} credits',
+                        ),
                         const Divider(height: 16),
                         _infoRow('Per credit rate', '৳ $_perCreditRate'),
                       ],
@@ -283,29 +293,21 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                               fontSize: 11, color: Colors.grey),
                         ),
                         const SizedBox(height: 10),
-                        TextField(
-                          controller: _waiverController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            hintText: 'Enter waiver %',
-                            prefixIcon: const Icon(
-                                Icons.discount_outlined,
-                                color: Color(0xFF2196F3)),
-                            suffix: Text('%',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 13, color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF2196F3)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE1F5EE),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'Scholarship/Waiver: ${_profileWaiver.toInt()}%',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF0F6E56),
                             ),
                           ),
-                        ),
+                        )
                       ],
                     ),
                   ),
