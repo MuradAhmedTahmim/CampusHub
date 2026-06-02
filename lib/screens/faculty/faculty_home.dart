@@ -6,6 +6,7 @@ import 'manage_course_screen.dart';
 import 'create_assignment_screen.dart';
 import 'mark_attendance_screen.dart';
 import '../student/profile_screen.dart';
+import 'create_notice_screen.dart';
 
 class FacultyHome extends StatefulWidget {
   const FacultyHome({super.key});
