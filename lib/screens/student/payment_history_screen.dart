@@ -335,36 +335,23 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                     : const Color(0xFFA32D2D)),
                           ),
                           if (isPaid)
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _downloadReceipt(data),
-                                  child: _downloadBtn(
-                                    Icons.download_outlined,
-                                    'Receipt',
-                                    const Color(0xFFE6F1FB),
-                                    const Color(0xFF185FA5),
-                                  ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE1F5EE),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Payment Completed',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: const Color(0xFF085041),
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                const SizedBox(width: 6),
-                                GestureDetector(
-                                  onTap: () {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                        Text('Transcript Downloaded'),
-                                      ),
-                                    );
-                                  },
-                                  child: _downloadBtn(
-                                    Icons.description_outlined,
-                                    'Transcript',
-                                    const Color(0xFFEEEDFE),
-                                    const Color(0xFF534AB7),
-                                  ),
-                                ),
-                              ],
+                              ),
                             )
                           else
                             Container(
@@ -389,48 +376,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                  onPressed: () async {
-                    for (final payment in _payments) {
-                      await _downloadReceipt(payment);
-                    }
-                  },
-                icon: const Icon(Icons.download_outlined, color: Colors.white),
-                label: Text('Download all documents',
-                    style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A3C6E),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _downloadBtn(IconData icon, String label, Color bg, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: color)),
         ],
       ),
     );
