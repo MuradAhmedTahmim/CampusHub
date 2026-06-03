@@ -139,21 +139,43 @@ class _HomeContentState extends State<_HomeContent> {
     }
 
     // Load attendance
-    final attSnap = await FirebaseDatabase.instance
-        .ref('attendance')
-        .orderByChild('studentId')
-        .equalTo(uid)
-        .get();
-    if (attSnap.exists && mounted) {
-      final att = Map<String, dynamic>.from(attSnap.value as Map);
+    final attSnap =
+    await FirebaseDatabase.instance.ref('attendance').get();
+
+    if (attSnap.exists) {
+      final attendanceData =
+      Map<String, dynamic>.from(attSnap.value as Map);
+
       int present = 0;
-      int total = att.length;
-      att.forEach((key, value) {
-        final a = Map<String, dynamic>.from(value as Map);
-        if (a['status'] == 'Present') present++;
+      int total = 0;
+
+      attendanceData.forEach((courseId, dateMap) {
+        final dates = Map<String, dynamic>.from(dateMap as Map);
+
+        dates.forEach((date, recordsMap) {
+          final records =
+          Map<String, dynamic>.from(recordsMap as Map);
+
+          records.forEach((recordId, recordData) {
+            final record =
+            Map<String, dynamic>.from(recordData as Map);
+
+            if (record['studentId'] == uid) {
+              total++;
+
+              if (record['status'] == 'Present') {
+                present++;
+              }
+            }
+          });
+        });
       });
-      if (total > 0 && mounted) {
-        setState(() => _attendancePct = (present / total * 100).toInt());
+
+      if (mounted) {
+        setState(() {
+          _attendancePct =
+          total > 0 ? ((present / total) * 100).round() : 0;
+        });
       }
     }
 

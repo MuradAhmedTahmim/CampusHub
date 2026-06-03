@@ -15,6 +15,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _studentIdController = TextEditingController();
   final _waiverController = TextEditingController();
   bool _isLoading = true;
   bool _isSaving = false;
@@ -39,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _nameController.text = name;
         _phoneController.text = data['phone'] ?? '';
+        _studentIdController.text = data['studentId'] ?? '';
         _waiverController.text = (data['waiver'] ?? 0).toString();
         _email = data['email'] ?? '';
         _role = data['role'] ?? '';
@@ -59,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await FirebaseDatabase.instance.ref('users/$uid').update({
       'name': _nameController.text.trim(),
       'phone': _phoneController.text.trim(),
+      'studentId': _studentIdController.text.trim(),
       'waiver': double.tryParse(_waiverController.text.trim()) ?? 0,
     });
 
@@ -108,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _studentIdController.dispose();
     _waiverController.dispose();
     super.dispose();
   }
@@ -270,8 +274,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Waiver - শুধু Student এর জন্য
-                        if (_role == 'Student') ...[
+                      if (_role == 'Student') ...[
+                        Text(
+                          'Student ID',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        TextField(
+                          controller: _studentIdController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(
+                              Icons.badge_outlined,
+                              color: Color(0xFF2196F3),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+
                           Text('Waiver (%)',
                               style: GoogleFonts.poppins(
                                   fontSize: 12, color: Colors.grey)),
@@ -324,6 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
                   if (_role == 'Student') ...[
                     SizedBox(
                       width: double.infinity,

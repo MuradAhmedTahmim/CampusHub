@@ -7,6 +7,7 @@ import 'create_assignment_screen.dart';
 import 'mark_attendance_screen.dart';
 import '../student/profile_screen.dart';
 import 'create_notice_screen.dart';
+import 'grade_management_screen.dart';
 
 class FacultyHome extends StatefulWidget {
   const FacultyHome({super.key});
@@ -45,10 +46,14 @@ class _FacultyHomeState extends State<FacultyHome> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      _FacultyHomeContent(userName: _userName, userInitials: _userInitials),
+      _FacultyHomeContent(
+        userName: _userName,
+        userInitials: _userInitials,
+      ),
       const ManageCourseScreen(),
       const CreateAssignmentScreen(),
       const MarkAttendanceScreen(),
+      const GradeManagementScreen(),
       const ProfileScreen(),
     ];
 
@@ -68,6 +73,11 @@ class _FacultyHomeState extends State<FacultyHome> {
           BottomNavigationBarItem(icon: Icon(Icons.book_outlined), activeIcon: Icon(Icons.book), label: 'Courses'),
           BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), activeIcon: Icon(Icons.assignment), label: 'Assignments'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today), label: 'Attendance'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grade_outlined),
+            activeIcon: Icon(Icons.grade),
+            label: 'Grades',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
