@@ -18,6 +18,12 @@ dependencies:
   firebase_auth: ^5.0.0
   firebase_database: ^11.0.0
 
+  http: ^1.2.1
+  pdf: ^3.11.0
+  printing: ^5.13.4
+
+  emailjs: ^4.0.0
+
   # Utilities
   google_fonts: ^6.2.1
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -61,6 +63,58 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       _paidCount = paidCount;
       _isLoading = false;
     });
+  }
+  Future<void> _downloadReceipt(
+      Map<String, dynamic> payment,
+      ) async {
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment:
+            pw.CrossAxisAlignment.start,
+            children: [
+
+              pw.Text(
+                'CampusHub Payment Receipt',
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+
+              pw.SizedBox(height: 20),
+
+              pw.Text(
+                  'Student: ${payment['studentName']}'),
+
+              pw.Text(
+                  'Transaction ID: ${payment['transactionId']}'),
+
+              pw.Text(
+                  'Semester: ${payment['semester']}'),
+
+              pw.Text(
+                  'Payment Method: ${payment['paymentMethod']}'),
+
+              pw.Text(
+                  'Amount: ৳ ${payment['netFee']}'),
+
+              pw.Text(
+                  'Status: ${payment['status']}'),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (format) async =>
+          pdf.save(),
+    );
   }
 
   @override
@@ -283,17 +337,33 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                           if (isPaid)
                             Row(
                               children: [
-                                _downloadBtn(
+                                GestureDetector(
+                                  onTap: () => _downloadReceipt(data),
+                                  child: _downloadBtn(
                                     Icons.download_outlined,
                                     'Receipt',
                                     const Color(0xFFE6F1FB),
-                                    const Color(0xFF185FA5)),
+                                    const Color(0xFF185FA5),
+                                  ),
+                                ),
                                 const SizedBox(width: 6),
-                                _downloadBtn(
+                                GestureDetector(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                        Text('Transcript Downloaded'),
+                                      ),
+                                    );
+                                  },
+                                  child: _downloadBtn(
                                     Icons.description_outlined,
                                     'Transcript',
                                     const Color(0xFFEEEDFE),
-                                    const Color(0xFF534AB7)),
+                                    const Color(0xFF534AB7),
+                                  ),
+                                ),
                               ],
                             )
                           else
@@ -325,12 +395,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Downloading all documents...')),
-                  );
-                },
+                  onPressed: () async {
+                    for (final payment in _payments) {
+                      await _downloadReceipt(payment);
+                    }
+                  },
                 icon: const Icon(Icons.download_outlined, color: Colors.white),
                 label: Text('Download all documents',
                     style: GoogleFonts.poppins(

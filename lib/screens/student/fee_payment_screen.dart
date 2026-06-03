@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'payment_history_screen.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:http/http.dart' as http;
 
 class FeePaymentScreen extends StatefulWidget {
   const FeePaymentScreen({super.key});
@@ -20,11 +23,68 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   String _userName = '';
   String _userInitials = 'U';
   double _profileWaiver = 0;
+  String _generatedOtp = '';
+  bool _otpSent = false;
+
+  final TextEditingController _otpController =
+  TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+  String _generateOtp() {
+    return (100000 + Random().nextInt(900000)).toString();
+  }
+
+  Future<void> _sendOtp() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || user.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email not found')),
+      );
+      return;
+    }
+
+    _generatedOtp = _generateOtp();
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+        headers: {
+          'origin': 'http://localhost',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'service_id': 'service_mr4sur2',
+          'template_id': 'template_oqnrrft',
+          'user_id': 'AIHNwXuZKFx_qXrXF',
+          'template_params': {
+            'email': user.email,
+            'passcode': _generatedOtp,
+            'time': '15 minutes',
+          }
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _otpSent = true;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP sent to email')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future<void> _loadData() async {
@@ -143,7 +203,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
 
                     Navigator.pop(context);
 
-                    await _pay(selectedMethod);
+                    await _showOtpDialog(selectedMethod);
 
                   },
                   child: const Text('Pay Now'),
@@ -155,7 +215,72 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       },
     );
   }
+  Future<void> _showOtpDialog(String paymentMethod) async {
 
+    await _sendOtp();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Email Verification'),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              const Text(
+                'OTP sent to your email',
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Enter OTP',
+                ),
+              ),
+            ],
+          ),
+
+          actions: [
+
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+
+            ElevatedButton(
+              onPressed: () async {
+
+                if (_otpController.text.trim() !=
+                    _generatedOtp) {
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Invalid OTP'),
+                    ),
+                  );
+
+                  return;
+                }
+
+                Navigator.pop(context);
+
+                await _pay(paymentMethod);
+              },
+              child: const Text('Verify'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   Future<void> _pay(String paymentMethod) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -188,6 +313,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   @override
   void dispose() {
     _waiverController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 

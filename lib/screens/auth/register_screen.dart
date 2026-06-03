@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:math';
+import 'package:emailjs/emailjs.dart' as emailjs;
 import 'login_screen.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,8 +24,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _selectedRole = 'Student';
   bool _isLoading = false;
   bool _obscurePassword = true;
+  final _otpController = TextEditingController();
+
+  String _generatedOtp = '';
+  bool _otpSent = false;
+  bool _otpVerified = false;
+
+  String _generateOtp() {
+    final random = Random();
+    return (100000 + random.nextInt(900000)).toString();
+  }
+
+  Future<void> _sendOtp() async {
+    _generatedOtp = _generateOtp();
+
+    final response = await http.post(
+      Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+      headers: {
+        'origin': 'http://localhost',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'service_id': 'service_mr4sur2',
+        'template_id': 'template_oqnrrft',
+        'user_id': 'AIHNwXuZKFx_qXrXF',
+        'template_params': {
+          'email': _emailController.text.trim(),
+          'passcode': _generatedOtp,
+          'time': '15 minutes',
+        }
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        _otpSent = true;
+      });
+
+      _showSnackbar('OTP sent successfully');
+    } else {
+      print(response.body);
+
+      _showSnackbar(
+        'Failed: ${response.statusCode}',
+      );
+    }
+  }
+
+  void _verifyOtp() {
+    if (_otpController.text.trim() == _generatedOtp) {
+      setState(() {
+        _otpVerified = true;
+      });
+
+      _showSnackbar('OTP verified successfully');
+    } else {
+      _showSnackbar('Invalid OTP');
+    }
+  }
 
   Future<void> _register() async {
+
+    if (!_otpVerified) {
+      _showSnackbar('Verify OTP first');
+      return;
+    }
+
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
@@ -70,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -157,7 +226,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _sendOtp,
+                      child: const Text('Send OTP'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  if (_otpSent) ...[
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Enter OTP',
+                        prefixIcon: const Icon(Icons.security),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _verifyOtp,
+                        child: const Text('Verify OTP'),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                  ],
                   Text('Phone number', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
                   const SizedBox(height: 6),
                   TextField(
