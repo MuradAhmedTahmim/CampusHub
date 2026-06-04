@@ -146,18 +146,20 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         .get();
 
     String studentName = 'Student';
+    String studentId = '';
 
     if (userSnap.exists) {
       final userData =
       Map<String, dynamic>.from(userSnap.value as Map);
 
       studentName = userData['name'] ?? 'Student';
+      studentId = userData['studentId'] ?? '';
     }
 
     await FirebaseDatabase.instance
         .ref('submissions/$assignmentId/$_uid')
         .set({
-      'studentId': _uid,
+      'studentId': studentId,
       'studentName': studentName,
       'submissionText': submissionText,
       'submittedAt': DateTime.now().toIso8601String(),

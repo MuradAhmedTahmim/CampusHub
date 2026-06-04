@@ -90,7 +90,7 @@ class _GradeManagementScreenState extends State<GradeManagementScreen> {
           final user = Map<String, dynamic>.from(userSnap.value as Map);
 
           students.add({
-            'studentId': studentId,
+            'studentId': user['studentId'] ?? '',
             'name': user['name'] ?? '',
             'email': user['email'] ?? '',
             'selectedGpa': 4.0,
@@ -237,7 +237,13 @@ class _GradeManagementScreenState extends State<GradeManagementScreen> {
                                 ),
                               ),
 
-                              Text(student['email']),
+                              Text(
+                                'ID: ${student['studentId'] ?? 'N/A'}',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
 
                               const SizedBox(height: 10),
 

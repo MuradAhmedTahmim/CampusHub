@@ -22,6 +22,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   bool _isLoading = true;
   String _userName = '';
   String _userInitials = 'U';
+  String _studentId = '';
   double _profileWaiver = 0;
   String _generatedOtp = '';
   bool _otpSent = false;
@@ -95,9 +96,11 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     if (userSnap.exists) {
       final data = Map<String, dynamic>.from(userSnap.value as Map);
       final name = data['name'] ?? '';
+      final studentId = data['studentId'] ?? '';
       final waiver = (data['waiver'] ?? 0) as num;
       setState(() {
         _userName = name;
+        _studentId = studentId;
         _userInitials = name.isNotEmpty
             ? name.trim().split(' ').map((e) => e[0]).take(2).join().toUpperCase()
             : 'U';
@@ -411,10 +414,13 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white)),
-                              Text('Spring 2026 • CSE',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      color: Colors.white60)),
+                              Text(
+                                '$_studentId',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.white60,
+                                ),
+                              ),
                             ],
                           ),
                         ),

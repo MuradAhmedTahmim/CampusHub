@@ -28,11 +28,11 @@ class AssignmentSubmissionsScreen extends StatefulWidget {
     _loadSubmissions();
   }
 
-  void _loadSubmissions() {
+  Future<void> _loadSubmissions() async {
     FirebaseDatabase.instance
         .ref('submissions/${widget.assignmentId}')
         .onValue
-        .listen((event) {
+        .listen((event) async {
       if (!event.snapshot.exists) {
         setState(() {
           _submissions = [];
@@ -46,24 +46,45 @@ class AssignmentSubmissionsScreen extends StatefulWidget {
 
       List<Map<String, dynamic>> loaded = [];
 
-      data.forEach((key, value) {
+      for (final entry in data.entries) {
+        final key = entry.key;
+        final value = entry.value;
+
         final submission =
         Map<String, dynamic>.from(value as Map);
 
         submission['studentUid'] = key;
 
+        try {
+          final userSnap = await FirebaseDatabase.instance
+              .ref('users/$key')
+              .get();
+
+          if (userSnap.exists) {
+            final userData =
+            Map<String, dynamic>.from(userSnap.value as Map);
+
+            submission['studentId'] =
+                userData['studentId'] ?? '';
+          }
+        } catch (_) {
+          submission['studentId'] = '';
+        }
+
         loaded.add(submission);
-      });
+      }
 
       loaded.sort((a, b) {
         return (b['submittedAt'] ?? '')
             .compareTo(a['submittedAt'] ?? '');
       });
 
-      setState(() {
-        _submissions = loaded;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _submissions = loaded;
+          _isLoading = false;
+        });
+      }
     });
   }
 
@@ -145,14 +166,26 @@ class AssignmentSubmissionsScreen extends StatefulWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        data['studentName'] ??
-                            'Student',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight:
-                          FontWeight.w600,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['studentName'] ?? 'Student',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+
+                          if ((data['studentId'] ?? '').toString().isNotEmpty)
+                            Text(
+                              'ID: ${data['studentId']}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],

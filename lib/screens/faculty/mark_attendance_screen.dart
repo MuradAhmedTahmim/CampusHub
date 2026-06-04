@@ -86,7 +86,10 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
       if (userSnap.exists) {
         final user = Map<String, dynamic>.from(userSnap.value as Map);
+
         user['uid'] = studentId;
+        user['studentId'] = user['studentId'] ?? '';
+
         students.add(user);
         _attendanceStatus[studentId] = 'Present';
       }
@@ -300,10 +303,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     color: const Color(0xFF212121))),
-                            Text(student['email'] ?? '',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    color: Colors.grey)),
+                            Text(
+                              'ID: ${student['studentId'] ?? 'N/A'}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
