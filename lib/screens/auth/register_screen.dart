@@ -85,47 +85,119 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
 
-    if (!_otpVerified) {
-      _showSnackbar('Verify OTP first');
-      return;
-    }
-
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
       _showSnackbar('Please fill in all fields');
       return;
     }
-    setState(() => _isLoading = true);
-    try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
 
-      final uid = credential.user!.uid;
-      await FirebaseDatabase.instance.ref('users/$uid').set({
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'role': _selectedRole,
-        'waiver': 0,
-        'createdAt': DateTime.now().toIso8601String(),
-      });
+    await _sendOtp();
 
-      if (mounted) {
-        _showSnackbar('Account created successfully!');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Email Verification'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              Text(
+                'OTP sent to ${_emailController.text.trim()}',
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Enter OTP',
+                ),
+              ),
+            ],
+          ),
+
+          actions: [
+
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+
+            ElevatedButton(
+              onPressed: () async {
+
+                if (_otpController.text.trim() != _generatedOtp) {
+                  _showSnackbar('Invalid OTP');
+                  return;
+                }
+
+                Navigator.pop(context);
+
+                setState(() => _isLoading = true);
+
+                try {
+
+                  final credential =
+                  await FirebaseAuth.instance
+                      .createUserWithEmailAndPassword(
+                    email: _emailController.text.trim(),
+                    password: _passwordController.text.trim(),
+                  );
+
+                  final uid = credential.user!.uid;
+
+                  await FirebaseDatabase.instance
+                      .ref('users/$uid')
+                      .set({
+                    'name': _nameController.text.trim(),
+                    'email': _emailController.text.trim(),
+                    'phone': _phoneController.text.trim(),
+                    'role': _selectedRole,
+                    'waiver': 0,
+                    'createdAt':
+                    DateTime.now().toIso8601String(),
+                  });
+
+                  if (mounted) {
+                    _showSnackbar(
+                        'Account created successfully, Please Sign in');
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                        const LoginScreen(),
+                      ),
+                    );
+                  }
+
+                } on FirebaseAuthException catch (e) {
+
+                  _showSnackbar(
+                    e.message ?? 'Registration failed',
+                  );
+
+                } finally {
+
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+              child: const Text('Verify'),
+            ),
+          ],
         );
-      }
-    } on FirebaseAuthException catch (e) {
-      _showSnackbar(e.message ?? 'Registration failed');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+      },
+    );
   }
 
   void _showSnackbar(String message) {
@@ -173,12 +245,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: const Icon(Icons.person_add, color: Colors.white, size: 28),
                   ),
                   const SizedBox(height: 16),
-                  Text('Create account',
-                      style: GoogleFonts.poppins(
-                          fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
-                  Text('Join Campus Hub today',
-                      style: GoogleFonts.poppins(
-                          fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
+                  Text(
+                    'Campus Hub',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    'Smart University Management System',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Create Account',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -227,41 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _sendOtp,
-                      child: const Text('Send OTP'),
-                    ),
-                  ),
 
-                  const SizedBox(height: 12),
-                  if (_otpSent) ...[
-                    TextField(
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: 'Enter OTP',
-                        prefixIcon: const Icon(Icons.security),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _verifyOtp,
-                        child: const Text('Verify OTP'),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-                  ],
                   Text('Phone number', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
                   const SizedBox(height: 6),
                   TextField(
@@ -282,34 +343,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Text('Role', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFF2196F3)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedRole,
-                        isExpanded: true,
-                        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                        items: ['Student', 'Faculty'].map((role) {
-                          return DropdownMenuItem(
-                            value: role,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.badge_outlined, color: Color(0xFF2196F3), size: 20),
-                                const SizedBox(width: 10),
-                                Text(role, style: GoogleFonts.poppins(fontSize: 13)),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _selectedRole = val!),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Role',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(height: 8),
+
+                      RadioListTile<String>(
+                        title: const Text('Student'),
+                        value: 'Student',
+                        groupValue: _selectedRole,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedRole = value!;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+
+                      RadioListTile<String>(
+                        title: const Text('Faculty'),
+                        value: 'Faculty',
+                        groupValue: _selectedRole,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedRole = value!;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   Text('Password', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
@@ -373,6 +445,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          '© 2026 Campus Hub',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF616161),
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          'Developed using Flutter & Firebase',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: const Color(0xFF757575),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/landing_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const LandingScreen(),
     );
   }
 }
