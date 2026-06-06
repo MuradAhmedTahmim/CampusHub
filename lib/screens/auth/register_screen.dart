@@ -5,9 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:math';
-import 'package:emailjs/emailjs.dart' as emailjs;
 import 'login_screen.dart';
-
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -27,8 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _otpController = TextEditingController();
 
   String _generatedOtp = '';
-  bool _otpSent = false;
-  bool _otpVerified = false;
+  DateTime? _otpGeneratedTime;
 
   String _generateOtp() {
     final random = Random();
@@ -37,6 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _sendOtp() async {
     _generatedOtp = _generateOtp();
+    _otpGeneratedTime = DateTime.now();
 
     final response = await http.post(
       Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
@@ -57,96 +55,178 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (response.statusCode == 200) {
-      setState(() {
-        _otpSent = true;
-      });
-
       _showSnackbar('OTP sent successfully');
     } else {
       print(response.body);
-
-      _showSnackbar(
-        'Failed: ${response.statusCode}',
-      );
+      _showSnackbar('Failed to send OTP: ${response.statusCode}');
     }
   }
 
-  void _verifyOtp() {
-    if (_otpController.text.trim() == _generatedOtp) {
-      setState(() {
-        _otpVerified = true;
-      });
 
-      _showSnackbar('OTP verified successfully');
-    } else {
-      _showSnackbar('Invalid OTP');
+  bool _validateInputs() {
+    String fullName = _nameController.text.trim();
+    if (fullName.isEmpty) {
+      _showSnackbar('Please enter your full name');
+      return false;
+    }
+    if (fullName.length < 3) {
+      _showSnackbar('Full name must be at least 3 characters');
+      return false;
+    }
+    if (fullName.length > 50) {
+      _showSnackbar('Full name must not exceed 50 characters');
+      return false;
+    }
+
+    String email = _emailController.text.trim();
+    if (email.isEmpty) {
+      _showSnackbar('Please enter your email');
+      return false;
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _showSnackbar('Please enter a valid email address');
+      return false;
+    }
+
+    String password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      _showSnackbar('Please enter your password');
+      return false;
+    }
+    if (password.length < 6) {
+      _showSnackbar('Password must be at least 6 characters');
+      return false;
+    }
+
+    String phone = _phoneController.text.trim();
+    if (phone.isNotEmpty) {
+      if (phone.length < 11 || phone.length > 14) {
+        _showSnackbar('Please enter a valid phone number (11-14 digits)');
+        return false;
+      }
+      if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
+        _showSnackbar('Phone number should contain only digits');
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+
+  Future<bool> _checkDuplicate() async {
+    String email = _emailController.text.trim();
+    String phone = _phoneController.text.trim();
+
+    try {
+
+      final signInMethods = await FirebaseAuth.instance
+          .fetchSignInMethodsForEmail(email);
+
+      if (signInMethods.isNotEmpty) {
+        _showSnackbar('This email is already registered. Please login instead.');
+        return false;
+      }
+
+      if (phone.isNotEmpty) {
+        final phoneSnapshot = await FirebaseDatabase.instance
+            .ref('users')
+            .orderByChild('phone')
+            .equalTo(phone)
+            .once();
+
+        if (phoneSnapshot.snapshot.value != null) {
+          _showSnackbar('This phone number is already registered');
+          return false;
+        }
+      }
+
+      return true;
+    } catch (e) {
+      print('Duplicate check failed: $e');
+      return true;
     }
   }
 
   Future<void> _register() async {
 
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      _showSnackbar('Please fill in all fields');
+    if (!_validateInputs()) {
+      return;
+    }
+
+
+    setState(() => _isLoading = true);
+
+    bool isDuplicateFree = await _checkDuplicate();
+
+    if (!isDuplicateFree) {
+      setState(() => _isLoading = false);
       return;
     }
 
     await _sendOtp();
 
+    setState(() => _isLoading = false);
+
     if (!mounted) return;
+
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Email Verification'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
-              Text(
-                'OTP sent to ${_emailController.text.trim()}',
-              ),
-
+              Text('OTP sent to ${_emailController.text.trim()}'),
               const SizedBox(height: 12),
-
               TextField(
                 controller: _otpController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Enter OTP',
+                  helperText: 'Valid for 15 minutes',
                 ),
               ),
             ],
           ),
-
           actions: [
-
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                _otpController.clear();
+                Navigator.pop(dialogContext);
               },
               child: const Text('Cancel'),
             ),
-
             ElevatedButton(
               onPressed: () async {
-
+                // OTP verify
                 if (_otpController.text.trim() != _generatedOtp) {
                   _showSnackbar('Invalid OTP');
                   return;
                 }
 
-                Navigator.pop(context);
+                // OTP timeout check
+                if (_otpGeneratedTime != null) {
+                  final difference = DateTime.now().difference(_otpGeneratedTime!);
+                  if (difference.inMinutes > 15) {
+                    _showSnackbar('OTP has expired. Please try again.');
+                    Navigator.pop(dialogContext);
+                    return;
+                  }
+                }
+
+
+                Navigator.pop(dialogContext);
+
 
                 setState(() => _isLoading = true);
 
                 try {
 
-                  final credential =
-                  await FirebaseAuth.instance
+                  final credential = await FirebaseAuth.instance
                       .createUserWithEmailAndPassword(
                     email: _emailController.text.trim(),
                     password: _passwordController.text.trim(),
@@ -162,31 +242,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'phone': _phoneController.text.trim(),
                     'role': _selectedRole,
                     'waiver': 0,
-                    'createdAt':
-                    DateTime.now().toIso8601String(),
+                    'createdAt': DateTime.now().toIso8601String(),
                   });
 
+                  // Success message
                   if (mounted) {
-                    _showSnackbar(
-                        'Account created successfully, Please Sign in');
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                        const LoginScreen(),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Account created successfully. Please sign in.'),
                       ),
                     );
                   }
 
+
+                  await Future.delayed(const Duration(milliseconds: 500));
+
+                  await FirebaseAuth.instance.signOut();
+
+
+                  if (mounted) {
+
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  }
+
                 } on FirebaseAuthException catch (e) {
-
-                  _showSnackbar(
-                    e.message ?? 'Registration failed',
-                  );
-
+                  if (mounted) {
+                    _showSnackbar(e.message ?? 'Registration failed');
+                  }
                 } finally {
-
                   if (mounted) {
                     setState(() => _isLoading = false);
                   }
@@ -211,6 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     _otpController.dispose();
     super.dispose();
   }
@@ -253,9 +340,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
                   Text(
                     'Smart University Management System',
                     style: GoogleFonts.poppins(
@@ -263,9 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       color: Colors.white70,
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   Text(
                     'Create Account',
                     style: GoogleFonts.poppins(
@@ -321,8 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-
-
+                  const SizedBox(height: 14),
                   Text('Phone number', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
                   const SizedBox(height: 6),
                   TextField(
@@ -353,9 +435,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: Colors.grey,
                         ),
                       ),
-
                       const SizedBox(height: 8),
-
                       RadioListTile<String>(
                         title: const Text('Student'),
                         value: 'Student',
@@ -368,7 +448,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                       ),
-
                       RadioListTile<String>(
                         title: const Text('Faculty'),
                         value: 'Faculty',
@@ -457,9 +536,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: const Color(0xFF616161),
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         Text(
                           'Developed using Flutter & Firebase',
                           textAlign: TextAlign.center,
@@ -468,7 +545,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: const Color(0xFF757575),
                           ),
                         ),
-
                         const SizedBox(height: 20),
                       ],
                     ),
