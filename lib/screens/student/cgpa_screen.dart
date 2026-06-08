@@ -38,25 +38,41 @@ class _CgpaScreenState extends State<CgpaScreen> {
     }
 
     final data = Map<String, dynamic>.from(snap.value as Map);
+    print("Current UID: $uid");
+    print("All Grades: $data");
     List<Map<String, dynamic>> grades = [];
     double totalPoints = 0;
     int totalCredits = 0;
 
     data.forEach((key, value) {
       final grade = Map<String, dynamic>.from(value as Map);
+
+      print("Course: ${grade['courseName']}");
+      print("Credit Value: ${grade['credit']}");
+      print("Credit Type: ${grade['credit'].runtimeType}");
+      print("GPA: ${grade['gpa']}");
+
       grade['id'] = key;
       grades.add(grade);
 
       final credit = (grade['credit'] ?? 0) as num;
       final gpa = (grade['gpa'] ?? 0) as num;
+
       totalPoints += credit.toDouble() * gpa.toDouble();
       totalCredits += credit.toInt();
     });
 
+    print("Final CGPA = ${totalCredits > 0 ? totalPoints / totalCredits : 0}");
+    print("Grades Length = ${grades.length}");
     setState(() {
       _grades = grades;
       _totalCredits = totalCredits;
-      _cgpa = totalCredits > 0 ? totalPoints / totalCredits : 0;
+      _cgpa = totalCredits > 0
+          ? totalPoints / totalCredits
+          : 0;
+
+      print("CGPA INSIDE SETSTATE = $_cgpa");
+
       _isLoading = false;
     });
   }
@@ -236,11 +252,11 @@ class _CgpaScreenState extends State<CgpaScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            _gradeBox('A', '4.00', const Color(0xFFE6F1FB), const Color(0xFF0C447C)),
+                            _gradeBox('A+', '4.00', const Color(0xFFE6F1FB), const Color(0xFF0C447C)),
                             const SizedBox(width: 6),
-                            _gradeBox('A-', '3.70', const Color(0xFFE1F5EE), const Color(0xFF085041)),
+                            _gradeBox('A', '3.75', const Color(0xFFE1F5EE), const Color(0xFF085041)),
                             const SizedBox(width: 6),
-                            _gradeBox('B+', '3.30', const Color(0xFFFAEEDA), const Color(0xFF633806)),
+                            _gradeBox('B+', '3.25', const Color(0xFFFAEEDA), const Color(0xFF633806)),
                             const SizedBox(width: 6),
                             _gradeBox('B', '3.00', const Color(0xFFFCEBEB), const Color(0xFF791F1F)),
                           ],
