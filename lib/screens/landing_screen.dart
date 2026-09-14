@@ -262,15 +262,6 @@ class LandingScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Nadim Ahmed',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
                     'Flutter + Firebase',
                     style: GoogleFonts.poppins(
                       color: Colors.white60,
