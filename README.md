@@ -6,6 +6,11 @@ The application provides separate role-based experiences for **Students** and **
 
 ---
 
+## 🌐 Live Demo
+https://campushub-86d4a.web.app
+
+---
+
 ## 📱 Overview
 
 CampusHub is designed to simplify common university activities by providing students and faculty members with a centralized digital platform.
